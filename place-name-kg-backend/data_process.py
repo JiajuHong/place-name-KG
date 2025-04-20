@@ -137,6 +137,9 @@ def save_to_neo(data, address_attributes):
             # 添加关系类型属性
             if relation_type:
                 rel['relation_type'] = relation_type
+            
+            # 添加不格式化的关系
+            rel['relation'] = relation
                 
             # 创建关系
             graph.create(rel)

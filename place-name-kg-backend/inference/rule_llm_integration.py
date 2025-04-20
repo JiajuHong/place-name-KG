@@ -288,8 +288,19 @@ class RuleLLMIntegration:
         inferred_relationships = []
         
         for rel in relationships:
-            relation = rel.get('relation', '')
+            # 使用原始关系（非格式化）来匹配规则
+            # 先获取关系名称，优先使用relation属性（如果存在）
             relation_type = rel.get('properties', {}).get('relation_type', '')
+
+            time = rel.get('properties', {}).get('time', '')
+            
+            # 从properties中获取原始的relation（非格式化），这是由data_process添加的
+            relation = rel.get('properties', {}).get('relation', '')
+            
+            # 如果原始relation不存在，则使用关系类型作为后备
+            if not relation:
+                relation = rel.get('relation', '')
+                
             source_name = rel.get('source', {}).get('name', '')
             target_name = rel.get('target', {}).get('name', '')
             
@@ -297,11 +308,39 @@ class RuleLLMIntegration:
             if rel.get('properties', {}).get('inferred', False):
                 continue
             
-            # 查找适用的规则
-            applicable_rules = self._find_applicable_rules(
-                relation_type=relation_type,
-                relation=relation
-            )
+            # 分类规则：大类规则和细分规则
+            big_category_rules = []  # 大类规则（演变类、所属类）
+            specific_rules = []      # 细分规则
+            
+            # 获取可应用的规则
+            for rule in self.rules:
+                condition = rule.get('condition', {})
+                # 跳过复合规则
+                if condition.get('composite', False):
+                    continue
+                    
+                rule_relation_type = condition.get('relation_type', '')
+                rule_relation = condition.get('relation', '')
+                
+                # 大类规则匹配（只需匹配relation_type，对演变类和所属类）
+                if rule_relation_type in ["演变类", "所属类"] and rule_relation_type == relation_type:
+                    if not rule_relation or rule_relation == relation:
+                        big_category_rules.append(rule)
+                
+                # 细分规则匹配（优先完全匹配，其次只匹配relation）
+                elif rule_relation:
+                    if rule_relation == relation:
+                        # 如果规则有relation_type且与关系不匹配，则跳过
+                        if rule_relation_type and rule_relation_type != relation_type:
+                            continue
+                        specific_rules.append(rule)
+            
+            # 合并大类规则和细分规则，确保至少应用大类规则
+            applicable_rules = big_category_rules + specific_rules
+            
+            # 如果没有适用的规则，跳过
+            if not applicable_rules:
+                continue
             
             # 应用规则
             for rule in applicable_rules:
@@ -309,6 +348,12 @@ class RuleLLMIntegration:
                 inference = rule.get('inference', {})
                 inferred_relation = inference.get('relation', '')
                 direction = inference.get('direction', 'forward')
+                
+                # 获取规则中定义的原始关系作为derived_from
+                rule_relation = rule.get('condition', {}).get('relation', '')
+                if not rule_relation:
+                    # 如果规则没有定义具体关系，使用数据关系
+                    rule_relation = relation
                 
                 # 创建新关系
                 inferred_rel = {
@@ -327,7 +372,8 @@ class RuleLLMIntegration:
                         'inferred': True,
                         'rule_id': rule['rule_id'],
                         'rule_name': rule.get('name', ''),
-                        'derived_from': relation
+                        'derived_from': relation,
+                        'time': time
                     }
                 }
                 
@@ -364,6 +410,7 @@ class RuleLLMIntegration:
                 print(f"推理关系: {inferred_rel['source']['name']} --[{inferred_relation}]--> {inferred_rel['target']['name']}")
                 print(f"  基于原始关系: {source_name} --[{relation}]--> {target_name}")
                 print(f"  关系类型: {relation_type}, 规则: {rule.get('name', '')}")
+                print(f"  规则定义的关系: {rule_relation}")
                 
                 inferred_relationships.append(inferred_rel)
         
@@ -389,9 +436,26 @@ class RuleLLMIntegration:
                     entity_info_text += f", 属性: {props_text}"
                 entity_info_text += "\n"
         
+        # 分离原始关系和推理关系
+        original_relationships = []
+        inferred_relationships = []
+        
+        for rel in relationships:
+            if rel.get('properties', {}).get('inferred', False) or rel.get('inferred', False):
+                inferred_relationships.append(rel)
+            else:
+                original_relationships.append(rel)
+        
         # 格式化关系信息为文本
-        relationships_text = ""
-        for i, rel in enumerate(relationships):
+        relationships_text = "原始关系(直接来自知识图谱):\n"
+        for i, rel in enumerate(original_relationships):
+            source = rel.get('source', {}).get('name', '')
+            target = rel.get('target', {}).get('name', '')
+            relation = rel.get('relation', '')
+            relationships_text += f"{i+1}. {source} --[{relation}]--> {target}\n"
+        
+        relationships_text += "\n推理关系(通过规则推理生成):\n"
+        for i, rel in enumerate(inferred_relationships):
             source = rel.get('source', {}).get('name', '')
             target = rel.get('target', {}).get('name', '')
             relation = rel.get('relation', '')
@@ -410,37 +474,57 @@ class RuleLLMIntegration:
                 paths_text += f"{i+1}. {path_str}\n"
         
         # 构建完整提示词
-        prompt = f"""我需要你基于以下信息回答用户的问题。
+        prompt = f"""你是一个专业的中国历史地名专家，精通地名沿革、行政区划变迁和地理位置关系。
+
+在分析地名关系时，请注意以下重要规则：
+1. 演变类关系表示地名的历史演变，A --[演变类]--> B 意味着"A演变为B"
+2. 推理关系是基于原始关系推导出的，应当与原始关系结合分析
+
+请确保你的回答：
+- 准确反映地名的历史演变顺序
+- 正确解读行政隶属关系
+- 清晰区分原始关系和推理关系
+- 基于证据推理，如无明确证据，说明这是推测
+
+所有回答必须基于知识图谱提供的事实，不要添加图谱之外的历史信息。
 
 用户问题: {question}
 
-识别到的实体: {', '.join(entities) if entities else '无'}
+识别到的地名实体: {', '.join(entities) if entities else '无'}
 
 实体详情:
 {entity_info_text if entity_info_text else '无可用实体详情'}
 
-实体关系:
+实体关系 (注意: A--[演变类]-->B 表示"A演变为B"):
 {relationships_text if relationships_text else '无可用实体关系'}
 
-实体之间的路径:
+实体之间的路径 (从源实体到目标实体的关系链):
 {paths_text if paths_text else '无可用路径信息'}
 
-基于上述知识图谱中的信息，请直接回答用户的问题。如果信息不足以完全回答，可以进行合理推测，但要说明这是推测。
-请使用专业、简洁的语言，不需要复述或总结知识图谱中的所有信息，只需提供与问题直接相关的信息。
+基于上述地名知识图谱中的信息，请分析并回答用户问题。如果信息不足以完全回答，可以进行合理推测，但必须明确标明哪些是基于图谱的事实，哪些是你的推测。
 
-回答应当遵循以下格式：
+分析思路：
+1. 首先分析问题类型(是查询地名变迁、行政隶属关系、地理位置还是其他)
+2. 分析图谱中与问题相关的关键实体及其属性
+3. 分析实体间的直接关系和路径，特别关注演变类和所属类关系
+4. 整合直接关系和推理关系，形成完整的地名关系链
+5. 基于上述分析形成最终答案
 
-<think>
-1. 问题理解: (简单重述用户问题并说明要分析的关键点)
+回答时先简要思考，然后给出准确清晰的结论。
 
-2. 实体分析: (对识别到的各个实体进行简要分析)
+分析信息时请遵循以下优先级:
+1. 直接来自知识图谱的原始关系具有最高可信度
+2. 基于原始关系的一阶推理关系次之
+3. 如有冲突，请优先采信原始关系
 
-3. 关系分析: (分析实体之间的关系)
-</think>
+请在回答中明确指出你使用的是原始关系还是推理关系。
 
-4. 推理结论: (基于以上分析给出结论)
+回答中请说明你的推理路径，特别是当你依赖推理关系时，请指出这是基于何种原始关系推导出的。
 
-你的回答必须严格按照上述格式，用<think>标签包围思考过程，确保该标签单独占一行。推理结论作为最终回答直接展示给用户。
+请对你的推理进行自我验证:
+1. 检查时间顺序是否合理（地名演变应遵循历史顺序）
+2. 验证行政隶属关系的层级是否合理
+3. 确认你的结论同时满足图谱中的原始关系和推理关系
 """
         
         return prompt
@@ -484,17 +568,30 @@ class RuleLLMIntegration:
                 messages=[
                     {
                         "role": "system", 
-                        "content": "你是一个专业的地名历史专家，擅长解释地名沿革、地理位置和历史变迁。你的回答"
-                                  "应当基于知识图谱中提供的实体和关系信息，保持专业、简洁和准确。"
-                                  "你可以进行合理推测，但需要清晰说明这是推测。"
-                                  "请使用清晰的语言回答用户问题，并按指定格式组织你的思考过程。"
+                        "content": """你是一个专业的中国历史地名专家，精通地名沿革、行政区划变迁和地理位置关系。
+
+请遵循以下解读原则：
+1. 演变类关系(A→B)表示A演变为B，即A是历史较早的地名，B是后来的地名
+2. 所属类关系(A→B)表示A隶属于B，即B是上级行政区，A是其下辖区域。
+3. 特别的，如果A--下辖-->B，则B是A的下一级行政区，A是B的上级行政区。
+3. 距离类关系表示地理位置距离
+
+分析要求：
+- 严格基于知识图谱提供的实体和关系进行分析
+- 对于多条可能的演变路径，优先考虑最直接的关系
+- 指出推理关系与原始关系的区别
+- 识别并说明时间维度上的演变序列
+
+
+回答要专业、准确且易于理解，避免出现与图谱事实不符的内容。"""
                     },
                     {
                         "role": "user", 
                         "content": prompt
                     }
                 ],
-                stream=False
+                stream=False,
+                options={"temperature": 0.1}  # 添加低温度参数
             )
             
             # 记录模型调用耗时
@@ -791,6 +888,8 @@ class RuleLLMIntegration:
         # 添加标题和说明
         text_parts.append("# 知识图谱中的关系数据")
         text_parts.append("以下数据来自地名知识图谱\n")
+        text_parts.append("演变类关系，即A--[演变类]-->B，则语义为：A演变为B。")
+        
         
         if relations:
             text_parts.append("## 图谱中的直接关系")
@@ -804,7 +903,7 @@ class RuleLLMIntegration:
                 relation_type = relation.get("relation", "未知关系")
                 
                 # 创建格式化的关系描述
-                rel_desc = f"{i+1}. {source} --[{relation_type}]--> {target}  【数据库关系】"
+                rel_desc = f"{i+1}. {source} --[{relation_type}（{target}演变为{source}）]--> {target}  【数据库关系】"
                 
                 # 添加额外属性信息
                 extra_props = []
@@ -850,6 +949,7 @@ class RuleLLMIntegration:
                 
                 # 查找推理依据
                 derived_from = relation.get("properties", {}).get("derived_from", "未知")
+                time = relation.get("properties", {}).get("time", "")
                 rule_name = relation.get("properties", {}).get("rule_name", "")
                 rule_id = relation.get("properties", {}).get("rule_id", "")
                 
@@ -859,7 +959,7 @@ class RuleLLMIntegration:
                 # 添加推理信息
                 inference_info = []
                 if derived_from:
-                    inference_info.append(f"基于关系: {derived_from}")
+                    inference_info.append(f"基于关系: {time}_{derived_from}")
                 if rule_name:
                     inference_info.append(f"应用规则: {rule_name}")
                 if rule_id:
