@@ -1,0 +1,243 @@
+[
+  {
+    "rule_id": "rule_001",
+    "name": "演变类基础推理规则",
+    "condition": {
+      "relation_type": "演变类"
+    },
+    "inference": {
+      "relation": "演变于",
+      "direction": "forward"
+    },
+    "priority": 10,
+    "description": "如果A--[演变类关系]-->B，则A演变于B（A从B演变而来）"
+  },
+  {
+    "rule_id": "rule_002",
+    "name": "沿革推理规则",
+    "condition": {
+      "relation": "沿革"
+    },
+    "inference": {
+      "relation": "演变于",
+      "direction": "forward"
+    },
+    "priority": 10,
+    "description": "如果A--[沿革]-->B，则A演变于B（A从B沿革而来）"
+  },
+  {
+    "rule_id": "rule_003",
+    "name": "更名推理规则",
+    "condition": {
+      "relation": "更名"
+    },
+    "inference": {
+      "relation": "改称自",
+      "direction": "forward"
+    },
+    "priority": 9,
+    "description": "如果A--[更名]-->B，则A改称自B（A是B更名而来）"
+  },
+  {
+    "rule_id": "rule_004",
+    "name": "升格推理规则",
+    "condition": {
+      "relation": "升格"
+    },
+    "inference": {
+      "relation": "提升自",
+      "direction": "forward"
+    },
+    "priority": 9,
+    "description": "如果A--[升格]-->B，则A提升自B（A是B升格而来）"
+  },
+  {
+    "rule_id": "rule_005",
+    "name": "撤县设市推理规则",
+    "condition": {
+      "relation": "撤县设市"
+    },
+    "inference": {
+      "relation": "升级自",
+      "direction": "forward"
+    },
+    "priority": 8,
+    "description": "如果A--[撤县设市]-->B，则A升级自B（A是B撤县设市而来）"
+  },
+  {
+    "rule_id": "rule_006",
+    "name": "撤市设区推理规则",
+    "condition": {
+      "relation": "撤市设区"
+    },
+    "inference": {
+      "relation": "调整自",
+      "direction": "forward"
+    },
+    "priority": 8,
+    "description": "如果A--[撤市设区]-->B，则A调整自B（A是B撤市设区而来）"
+  },
+  {
+    "rule_id": "rule_007",
+    "name": "合并推理规则",
+    "condition": {
+      "relation": "合并"
+    },
+    "inference": {
+      "relation": "合并自",
+      "direction": "forward"
+    },
+    "priority": 7,
+    "description": "如果A--[合并]-->B，则A合并自B（A是B合并而来）"
+  },
+  {
+    "rule_id": "rule_008",
+    "name": "析置推理规则",
+    "condition": {
+      "relation": "析置",
+      "relation_type": "演变类"
+    },
+    "inference": {
+      "relation": "分出自",
+      "direction": "forward"
+    },
+    "priority": 7,
+    "description": "如果A--[析置]-->B，则A分出自B（A是从B析置而来）"
+  },
+  {
+    "rule_id": "rule_009",
+    "name": "设立推理规则",
+    "condition": {
+      "relation": "设立"
+    },
+    "inference": {
+      "relation": "设立自",
+      "direction": "forward"
+    },
+    "priority": 6,
+    "description": "如果A--[设立]-->B，则A设立自B（A是由B设立而来）"
+  },
+  {
+    "rule_id": "rule_010",
+    "name": "分置推理规则",
+    "condition": {
+      "relation": "分置"
+    },
+    "inference": {
+      "relation": "拆分自",
+      "direction": "forward"
+    },
+    "priority": 6,
+    "description": "如果A--[分置]-->B，则A拆分自B（A是由B分置而来）"
+  },
+  {
+    "rule_id": "rule_011",
+    "name": "改置推理规则",
+    "condition": {
+      "relation": "改置"
+    },
+    "inference": {
+      "relation": "改制自",
+      "direction": "forward"
+    },
+    "priority": 6,
+    "description": "如果A--[改置]-->B，则A改制自B（A是由B改置而来）"
+  },
+  {
+    "rule_id": "rule_018",
+    "name": "降格改名推理规则",
+    "condition": {
+      "relation": "降格改名"
+    },
+    "inference": {
+      "relation": "降格自",
+      "direction": "forward"
+    },
+    "priority": 15,
+    "description": "如果A--[降格改名]-->B，则A降格自B（A是B降格改名而来）"
+  },
+  {
+    "rule_id": "rule_012",
+    "name": "所属类基础推理规则",
+    "condition": {
+      "relation_type": "所属类"
+    },
+    "inference": {
+      "relation": "下辖",
+      "direction": "reverse"
+    },
+    "priority": 10,
+    "description": "如果A--所属类关系-->B，则B下辖A（A隶属于B）"
+  },
+  {
+    "rule_id": "rule_013",
+    "name": "隶属推理规则",
+    "condition": {
+      "relation": "隶属"
+    },
+    "inference": {
+      "relation": "管辖",
+      "direction": "reverse"
+    },
+    "priority": 10,
+    "description": "如果A--隶属-->B，则B管辖A（A隶属于B）"
+  },
+  {
+    "rule_id": "rule_014",
+    "name": "下辖推理规则",
+    "condition": {
+      "relation": "下辖"
+    },
+    "inference": {
+      "relation": "属于",
+      "direction": "reverse"
+    },
+    "priority": 9,
+    "description": "如果A--下辖-->B，则B属于A（B被A下辖）"
+  },
+  {
+    "rule_id": "rule_015",
+    "name": "辖域推理规则",
+    "condition": {
+      "relation": "辖域"
+    },
+    "inference": {
+      "relation": "隶属区域",
+      "direction": "reverse"
+    },
+    "priority": 8,
+    "description": "如果A--辖域-->B，则B隶属区域A（B在A的辖域内）"
+  },
+  {
+    "rule_id": "rule_016",
+    "name": "时间传承复合规则",
+    "condition": {
+      "relation": "演变于",
+      "composite": true,
+      "path_length": 2
+    },
+    "inference": {
+      "relation": "历史演变于",
+      "direction": "forward",
+      "transitive": true
+    },
+    "priority": 5,
+    "description": "如果A演变于B且B演变于C，则A历史演变于C（A是由C经历历史演变而来）"
+  },
+  {
+    "rule_id": "rule_017",
+    "name": "管辖链复合规则",
+    "condition": {
+      "relation": "下辖",
+      "composite": true,
+      "path_length": 2
+    },
+    "inference": {
+      "relation": "间接管辖",
+      "direction": "forward",
+      "transitive": true
+    },
+    "priority": 5,
+    "description": "如果A下辖B且B下辖C，则A间接管辖C（C被A间接管辖）"
+  }
+] 
