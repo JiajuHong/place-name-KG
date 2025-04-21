@@ -18,7 +18,7 @@
       "relation": "沿革"
     },
     "inference": {
-      "relation": " 前承",
+      "relation": "前承",
       "direction": "reverse"
     },
     "description": "如果A--[沿革]-->B，则B前承A"
@@ -122,7 +122,7 @@
   },
   {
     "rule_id": "rule_012",
-    "name": "所属类基础推理规则",
+    "name": "下辖推理规则",
     "condition": {
       "relation_type": "下辖"
     },
@@ -160,7 +160,7 @@
     "rule_id": "rule_017",
     "name": "管辖链复合规则",
     "condition": {
-      "relation": "下辖类",
+      "relation": "下辖",
       "composite": true,
       "path_length": 2
     },
