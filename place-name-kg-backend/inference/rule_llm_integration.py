@@ -17,7 +17,7 @@ class RuleLLMIntegration:
     
     def __init__(self, rule_file_path: str = 'rules/rule_base.json', 
                  model_name: str = "deepseek-r1:7b",
-                 max_depth: int = 3):
+                 max_depth: int = 30):
         """
         初始化推理引擎
         
@@ -203,7 +203,6 @@ class RuleLLMIntegration:
             MATCH path = shortestPath((n)-[*1..{max_depth}]->(m))
             WHERE ID(n) = {entity1_id} AND ID(m) = {entity2_id}
             RETURN path
-            LIMIT 5
             """
             
             # 查询从entity2到entity1的有向路径
@@ -211,7 +210,6 @@ class RuleLLMIntegration:
             MATCH path = shortestPath((n)-[*1..{max_depth}]->(m))
             WHERE ID(n) = {entity2_id} AND ID(m) = {entity1_id}
             RETURN path
-            LIMIT 5
             """
             
             # 合并结果
@@ -425,6 +423,11 @@ class RuleLLMIntegration:
                                paths: List[Dict]) -> str:
         """构建推理提示词"""
         
+        # 预处理用户问题 - 移除多余空格并确保问题以问号结尾
+        processed_question = question.strip()
+        if processed_question and not processed_question.endswith(('?', '？')):
+            processed_question += '？'
+        
         # 格式化实体信息为文本
         entity_info_text = ""
         for i, info in enumerate(entity_info):
@@ -473,23 +476,12 @@ class RuleLLMIntegration:
                     path_str += f" --[{relation}]--> {node.get('name', '')}"
                 paths_text += f"{i+1}. {path_str}\n"
         
-        # 构建完整提示词
-        prompt = f"""你是一个专业的中国历史地名专家，精通地名沿革、行政区划变迁和地理位置关系。
+        # 构建完整提示词，明确区分用户问题和指令
+        prompt = f"""
+## 用户原始问题
+{processed_question}
 
-在分析地名关系时，请注意以下重要规则：
-1. 演变类关系表示地名的历史演变，A --[演变类]--> B 意味着"A演变为B"
-2. 推理关系是基于原始关系推导出的，应当与原始关系结合分析
-
-请确保你的回答：
-- 准确反映地名的历史演变顺序
-- 正确解读行政隶属关系
-- 清晰区分原始关系和推理关系
-- 基于证据推理，如无明确证据，说明这是推测
-
-所有回答必须基于知识图谱提供的事实，不要添加图谱之外的历史信息。
-
-用户问题: {question}
-
+## 识别到的信息
 识别到的地名实体: {', '.join(entities) if entities else '无'}
 
 实体详情:
@@ -501,30 +493,25 @@ class RuleLLMIntegration:
 实体之间的路径 (从源实体到目标实体的关系链):
 {paths_text if paths_text else '无可用路径信息'}
 
-基于上述地名知识图谱中的信息，请分析并回答用户问题。如果信息不足以完全回答，可以进行合理推测，但必须明确标明哪些是基于图谱的事实，哪些是你的推测。
+## 你需要做的是
+直接回答用户的原始问题："{processed_question}"
+基于上述地名知识图谱中的信息进行回答。如果信息不足以完全回答，可以进行合理推测，但必须明确标明哪些是基于图谱的事实，哪些是你的推测。
 
-分析思路：
-1. 首先分析问题类型(是查询地名变迁、行政隶属关系、地理位置还是其他)
-2. 分析图谱中与问题相关的关键实体及其属性
-3. 分析实体间的直接关系和路径，特别关注演变类和所属类关系
-4. 整合直接关系和推理关系，形成完整的地名关系链
-5. 基于上述分析形成最终答案
+## 数据解读规则
+1. **关系理解**:
+   - 演变类关系表示地名的历史演变，A --[演变类]--> B 意味着"A演变为B"
+   - 推理关系是基于原始关系推导出的，应当与原始关系结合分析
 
-回答时先简要思考，然后给出准确清晰的结论。
+2. **数据可信度优先级**:
+   - 直接来自知识图谱的原始关系具有最高可信度
+   - 基于原始关系的一阶推理关系次之
+   - 如有冲突，请优先采信原始关系
 
-分析信息时请遵循以下优先级:
-1. 直接来自知识图谱的原始关系具有最高可信度
-2. 基于原始关系的一阶推理关系次之
-3. 如有冲突，请优先采信原始关系
-
-请在回答中明确指出你使用的是原始关系还是推理关系。
-
-回答中请说明你的推理路径，特别是当你依赖推理关系时，请指出这是基于何种原始关系推导出的。
-
-请对你的推理进行自我验证:
-1. 检查时间顺序是否合理（地名演变应遵循历史顺序）
-2. 验证行政隶属关系的层级是否合理
-3. 确认你的结论同时满足图谱中的原始关系和推理关系
+3. **回答要求**:
+   - 回答时，不要重复这些指令
+   - 直接简明地回答用户的原始问题
+   - 不要说"根据提供的信息"或"基于图谱数据"等引导语
+   - 不要将这些指令内容作为用户问题的一部分
 """
         
         return prompt
@@ -549,7 +536,7 @@ class RuleLLMIntegration:
             生成的回答
         """
         # 构建提示词
-        prompt = self._build_inference_prompt(
+        user_prompt = self._build_inference_prompt(
             question=question,
             entities=entities,
             entity_info=entity_info,
@@ -562,36 +549,32 @@ class RuleLLMIntegration:
             start_time = time.time()
             print(f"调用 {self.model_name} 模型生成回答...")
             
+            # 增强的system提示词，强调对用户问题的准确理解
+            system_prompt = """你是一个专业的苏州历史地名专家，精通苏州历史地名沿革、行政区划变迁和隶属等关系。
+你的职责是：
+1. 只回答用户提出的原始问题，不要重复或引用我给你的指令内容
+2. 不要在回答中说"根据提供的信息"或"基于图谱数据"等引导语
+3. 所有回答必须基于知识图谱提供的事实，不要编造不存在的关系
+4. 答案应直接、简洁，不要添加不必要的解释
+
+重要: 不要将指令或提示词本身视为用户问题的一部分。用户的原始问题已在提示词开头明确标出。
+"""
+            
             # 调用大模型生成回答
             response = ollama.chat(
                 model=self.model_name,
                 messages=[
                     {
                         "role": "system", 
-                        "content": """你是一个专业的中国历史地名专家，精通地名沿革、行政区划变迁和地理位置关系。
-
-请遵循以下解读原则：
-1. 演变类关系(A→B)表示A演变为B，即A是历史较早的地名，B是后来的地名
-2. 所属类关系(A→B)表示A隶属于B，即B是上级行政区，A是其下辖区域。
-3. 特别的，如果A--下辖-->B，则B是A的下一级行政区，A是B的上级行政区。
-3. 距离类关系表示地理位置距离
-
-分析要求：
-- 严格基于知识图谱提供的实体和关系进行分析
-- 对于多条可能的演变路径，优先考虑最直接的关系
-- 指出推理关系与原始关系的区别
-- 识别并说明时间维度上的演变序列
-
-
-回答要专业、准确且易于理解，避免出现与图谱事实不符的内容。"""
+                        "content": system_prompt
                     },
                     {
                         "role": "user", 
-                        "content": prompt
+                        "content": user_prompt
                     }
                 ],
                 stream=False,
-                options={"temperature": 0.1}  # 添加低温度参数
+                options={"temperature": 0.1}  # 添加温度参数
             )
             
             # 记录模型调用耗时
@@ -620,18 +603,53 @@ class RuleLLMIntegration:
         start_time = time.time()
         
         try:
-            print(f"开始处理用户问题: '{question}'")
-            
-            # 1. 从问题中提取实体
-            entities = entity_extractor.extract_entities(question)
-            
-            if not entities:
+            # 预处理用户问题
+            if not question or not question.strip():
                 return {
-                    'answer': "抱歉，我无法从您的问题中识别出任何地名实体。请尝试提供更具体的地名。",
+                    'answer': "请提供有效的问题。",
                     'entities': [],
                     'kg_data': {'nodes': [], 'lines': []},
                     'process_time': time.time() - start_time
                 }
+            
+            # 规范化问题格式
+            processed_question = question.strip()
+            # 检查问题是否过短或可能无效
+            if len(processed_question) < 3:
+                print(f"警告: 问题过短或可能无效: '{processed_question}'")
+            
+            print(f"开始处理用户问题: '{processed_question}'")
+            
+            # 1. 从问题中提取实体
+            entities = entity_extractor.extract_entities(processed_question)
+            
+            # 如果没有识别到实体，但问题中可能包含地名相关词汇，尝试进行模糊匹配
+            if not entities:
+                # 检查问题中是否包含可能的地名关键词
+                location_keywords = ["地", "区", "县", "市", "州", "府", "路", "街", "苏州", "吴", "阊", "平江"]
+                has_location_keyword = any(keyword in processed_question for keyword in location_keywords)
+                
+                if has_location_keyword:
+                    print(f"未识别到具体地名实体，但问题中包含地名关键词，尝试进行模糊匹配")
+                    # 提取问题中的所有可能实体词 (简单处理，实际应使用NLP工具)
+                    potential_entities = []
+                    for keyword in location_keywords:
+                        if keyword in processed_question and len(keyword) > 1:  # 避免单字匹配
+                            potential_entities.append(keyword)
+                    
+                    if potential_entities:
+                        print(f"从问题中提取潜在地名关键词: {potential_entities}")
+                        entities = potential_entities
+            
+            if not entities:
+                return {
+                    'answer': "抱歉，我无法从您的问题中识别出任何地名实体。请尝试提供更具体的地名，例如'苏州'、'平江府'等。",
+                    'entities': [],
+                    'kg_data': {'nodes': [], 'lines': []},
+                    'process_time': time.time() - start_time
+                }
+            
+            print(f"从问题中识别到的实体: {entities}")
             
             # 记录查询涉及的所有节点和关系
             all_entity_info = []
@@ -682,6 +700,15 @@ class RuleLLMIntegration:
                             all_entity_info.append(info)
                             entity_info_map[info['id']] = info
             
+            # 如果没有找到任何实体信息，给出更友好的回复
+            if not all_entity_info:
+                return {
+                    'answer': f"抱歉，我无法在知识库中找到与'{', '.join(entities)}'相关的地名信息。请尝试其他地名或检查拼写是否正确。",
+                    'entities': entities,
+                    'kg_data': {'nodes': [], 'lines': []},
+                    'process_time': time.time() - start_time
+                }
+            
             # 3. 获取实体关系
             for info in all_entity_info:
                 entity_id = info['id']
@@ -706,7 +733,7 @@ class RuleLLMIntegration:
             
             # 6. 使用大模型生成回答
             answer = self.generate_response_with_llm(
-                question=question,
+                question=processed_question,  # 使用处理后的问题
                 entities=entities,
                 entity_info=all_entity_info,
                 relationships=all_relationships,

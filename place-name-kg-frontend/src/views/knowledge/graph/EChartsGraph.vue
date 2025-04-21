@@ -544,15 +544,28 @@ const getProcessedLinks = (data: any) => {
       label: {
         show: showLabel,
         formatter: line.text,
-        fontSize: 11,
+        fontSize: 9, // 从11减小到9
         color: '#333',
-        backgroundColor: 'rgba(255, 255, 255, 0.7)',
-        padding: [3, 5],
-        borderRadius: 3,
-        distance: 5,
+        backgroundColor: 'transparent',
+        padding: [2, 3], // 从[3, 5]减小到[2, 3]
+        borderRadius: 2, // 从3减小到2
+        distance: 3,
         align: 'center',
         verticalAlign: 'middle',
         position: 'middle'
+      },
+      edgeLabel: {
+        show: true,
+        formatter: function(params) {
+          return params.data.value;
+        },
+        fontSize: 8, // 从10减小到8
+        color: '#333', // 更深的文字颜色
+        padding: [1, 3], // 从[2, 4]减小到[1, 3]
+        backgroundColor: 'transparent', // 将背景色设置为透明
+        textBorderColor: 'rgba(255, 255, 255, 0.8)', // 添加白色描边提高可读性
+        textBorderWidth: 2, // 描边宽度保持不变以确保可读性
+        distance: 3 // 添加距离参数，使文字更贴近连线
       }
     }
   })
@@ -851,15 +864,13 @@ const getChartOption = (data: any): EChartsOption => {
       label: {
         show: showLabel,
         formatter: line.text,
-        fontSize: 11,
-        color: '#333',
-        backgroundColor: 'rgba(255, 255, 255, 0.7)',
-        padding: [3, 5],
-        borderRadius: 3,
-        distance: 5,
-        align: 'center',
-        verticalAlign: 'middle',
-        position: 'middle'
+        fontSize: 9, // 从10减小到8
+        color: '#333', // 更深的文字颜色
+        padding: [1, 3], // 从[2, 4]减小到[1, 3]
+        backgroundColor: 'transparent', // 将背景色设置为透明
+        textBorderColor: 'rgba(255, 255, 255, 0.8)', // 添加白色描边提高可读性
+        textBorderWidth: 1, // 描边宽度保持不变以确保可读性
+        distance: 3 // 添加距离参数，使文字更贴近连线
       }
     }
   })
@@ -951,25 +962,25 @@ const getChartOption = (data: any): EChartsOption => {
       data: displayNodes,
       links: displayLinks,
       force: {
-        repulsion: 250,       // 降低节点间斥力
-        edgeLength: 150,      // 减小边长度
-        gravity: 0.03,        // 降低重力
-        friction: 0.6,        // 降低摩擦力
+        repulsion: 350,       // 增加斥力，使节点之间距离更远
+        edgeLength: 150,      // 增加边长度，使连接的节点距离更大
+        gravity: 0.01,        // 减小引力，减少节点向中心聚集
+        friction: 0.8,        // 增加摩擦系数，使布局更快达到稳定状态
         initLayout: 'circular',
         layoutAnimation: true,
-        coolingTime: 800,
-        maxIterations: 100,
+        coolingTime: 800,    // 增加冷却时间，给布局更多时间稳定
+        maxIterations: 110,   // 增加最大迭代次数
         gravityCenter: [0, 0],
-        edgeStrength: 0.05,    // 降低边强度
-        nodeStrength: 0.1,    // 降低节点强度
+        edgeStrength: 0.03,   // 降低边强度，使边的牵引力更弱
+        nodeStrength: 0.08,   // 调整节点强度
         draggable: true,
         fixX: false,
         fixY: false,
         layoutBy: 'force',
         preventOverlap: true,
-        nodeScaleRatio: 0.6,  // 降低节点比例
-        minMovement: 0.2,
-        maxSpeed: 30
+        nodeScaleRatio: 0.6,  // 降低节点比例，减少节点大小对布局的影响
+        minMovement: 0.1,     // 减小最小移动距离，更精细的稳定条件
+        maxSpeed: 10          // 减小最大速度，使节点移动更平稳
       },
       roam: true,
       draggable: true,
@@ -996,11 +1007,13 @@ const getChartOption = (data: any): EChartsOption => {
         formatter: function(params) {
           return params.data.value;
         },
-        fontSize: 10,
+        fontSize: 8, // 从10减小到8
         color: '#333', // 更深的文字颜色
-        padding: [2, 4], // 保留内边距
+        padding: [1, 3], // 从[2, 4]减小到[1, 3]
+        backgroundColor: 'transparent', // 将背景色设置为透明
         textBorderColor: 'rgba(255, 255, 255, 0.8)', // 添加白色描边提高可读性
-        textBorderWidth: 2 // 描边宽度
+        textBorderWidth: 2, // 描边宽度保持不变以确保可读性
+        distance: 3 // 添加距离参数，使文字更贴近连线
       },
       emphasis: {
         focus: 'adjacency',

@@ -10,7 +10,7 @@ import time
 class Extractor:
     """
     基于大模型的地名实体提取器
-    使用Ollama提供的大模型能力和deepseek-r1:7b模型提取所有地名实体
+    使用Ollama提供的大模型能力和deepseek-r1模型提取所有地名实体
     """
     
     def __init__(self, model_name="deepseek-r1:7b"):
