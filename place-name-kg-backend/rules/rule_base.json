@@ -130,7 +130,7 @@
       "relation": "隶属",
       "direction": "reverse"
     },
-    "description": "如果A--下辖-->B，则B下辖A"
+    "description": "如果A--[下辖]-->B，则B隶属A"
   },
   {
     "rule_id": "rule_013",
@@ -170,5 +170,174 @@
       "transitive": true
     },
     "description": "如果A下辖B且B下辖C，则A间接管辖C（C被A间接管辖）"
+  },
+  {
+    "rule_id": "rule_019",
+    "name": "重建推理规则",
+    "condition": {
+      "relation": "重建",
+      "relation_type": "演变类"
+    },
+    "inference": {
+      "relation": "重建自",
+      "direction": "reverse"
+    },
+    "description": "如果A--[重建]-->B，则B重建自A"
+  },
+  {
+    "rule_id": "rule_020",
+    "name": "升格改名推理规则",
+    "condition": {
+      "relation": "升格改名",
+      "relation_type": "演变类"
+    },
+    "inference": {
+      "relation": "升级自",
+      "direction": "reverse"
+    },
+    "description": "如果A--[升格改名]-->B，则B升级自A"
+  },
+  {
+    "rule_id": "rule_021",
+    "name": "撤市设区推理规则",
+    "condition": {
+      "relation": "撤市设区",
+      "relation_type": "演变类"
+    },
+    "inference": {
+      "relation": "由市改为区",
+      "direction": "reverse"
+    },
+    "description": "如果A--[撤市设区]-->B，则B由市改为区源自A"
+  },
+  {
+    "rule_id": "rule_022",
+    "name": "战时改制推理规则",
+    "condition": {
+      "relation": "战时改制",
+      "relation_type": "演变类"
+    },
+    "inference": {
+      "relation": "战时调整自",
+      "direction": "reverse"
+    },
+    "description": "如果A--[战时改制]-->B，则B战时调整自A"
+  },
+  {
+    "rule_id": "rule_023",
+    "name": "得名推理规则",
+    "condition": {
+      "relation": "得名",
+      "relation_type": "演变类"
+    },
+    "inference": {
+      "relation": "名称来源于",
+      "direction": "reverse"
+    },
+    "description": "如果A--[得名]-->B，则B名称来源于A"
+  },
+  {
+    "rule_id": "rule_024",
+    "name": "迁移推理规则",
+    "condition": {
+      "relation": "迁移",
+      "relation_type": "演变类"
+    },
+    "inference": {
+      "relation": "迁移自",
+      "direction": "reverse"
+    },
+    "description": "如果A--[迁移]-->B，则B迁移自A"
+  },
+  {
+    "rule_id": "rule_025",
+    "name": "撤县设市推理规则",
+    "condition": {
+      "relation": "撤县设市",
+      "relation_type": "演变类"
+    },
+    "inference": {
+      "relation": "由县改市",
+      "direction": "reverse"
+    },
+    "description": "如果A--[撤县设市]-->B，则B由县改市源自A"
+  },
+  {
+    "rule_id": "rule_026",
+    "name": "废府改县推理规则",
+    "condition": {
+      "relation": "废府改县",
+      "relation_type": "演变类"
+    },
+    "inference": {
+      "relation": "由府降为县",
+      "direction": "reverse"
+    },
+    "description": "如果A--[废府改县]-->B，则B由府降为县源自A"
+  },
+  {
+    "rule_id": "rule_027",
+    "name": "开凿推理规则",
+    "condition": {
+      "relation": "开凿",
+      "relation_type": "演变类"
+    },
+    "inference": {
+      "relation": "开凿自",
+      "direction": "reverse"
+    },
+    "description": "如果A--[开凿]-->B，则B开凿自A"
+  },
+  {
+    "rule_id": "rule_028",
+    "name": "复置推理规则",
+    "condition": {
+      "relation": "复置",
+      "relation_type": "演变类"
+    },
+    "inference": {
+      "relation": "重新设置自",
+      "direction": "reverse"
+    },
+    "description": "如果A--[复置]-->B，则B重新设置自A"
+  },
+  {
+    "rule_id": "rule_029",
+    "name": "复名推理规则",
+    "condition": {
+      "relation": "复名",
+      "relation_type": "演变类"
+    },
+    "inference": {
+      "relation": "恢复名称自",
+      "direction": "reverse"
+    },
+    "description": "如果A--[复名]-->B，则B恢复名称自A"
+  },
+  {
+    "rule_id": "rule_030",
+    "name": "划归推理规则",
+    "condition": {
+      "relation": "划归",
+      "relation_type": "所属类"
+    },
+    "inference": {
+      "relation": "接收管辖",
+      "direction": "reverse"
+    },
+    "description": "如果A--[划归]-->B，则B接收管辖A"
+  },
+  {
+    "rule_id": "rule_031",
+    "name": "分属推理规则",
+    "condition": {
+      "relation": "分属",
+      "relation_type": "所属类"
+    },
+    "inference": {
+      "relation": "部分管辖",
+      "direction": "reverse"
+    },
+    "description": "如果A--[分属]-->B，则B部分管辖A"
   }
 ] 

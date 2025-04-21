@@ -198,6 +198,11 @@ class RuleLLMIntegration:
             max_depth = self.max_depth
             
         try:
+            # 添加检查：如果起始和结束节点相同，则跳过路径搜索
+            if entity1_id == entity2_id:
+                print(f"跳过相同节点的路径搜索: {entity1_id} -> {entity1_id}")
+                return []
+                
             # 查询从entity1到entity2的有向路径
             query_forward = f"""
             MATCH path = shortestPath((n)-[*1..{max_depth}]->(m))
@@ -717,10 +722,26 @@ class RuleLLMIntegration:
             
             # 4. 搜索实体之间的路径
             if len(all_entity_info) >= 2:
+                # 已处理的实体对，避免重复查询
+                processed_entity_pairs = set()
+                
                 for i in range(len(all_entity_info)):
                     for j in range(i+1, len(all_entity_info)):
                         entity1_id = all_entity_info[i]['id']
                         entity2_id = all_entity_info[j]['id']
+                        
+                        # 跳过相同的实体ID
+                        if entity1_id == entity2_id:
+                            continue
+                            
+                        # 创建一个排序后的实体ID对作为键，确保不重复查询
+                        entity_pair = tuple(sorted([entity1_id, entity2_id]))
+                        if entity_pair in processed_entity_pairs:
+                            continue
+                            
+                        processed_entity_pairs.add(entity_pair)
+                        
+                        # 搜索路径
                         paths = self.search_paths_between_entities(entity1_id, entity2_id, neo4j_db)
                         all_paths.extend(paths)
             
