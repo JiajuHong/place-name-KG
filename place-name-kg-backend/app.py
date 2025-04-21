@@ -45,7 +45,7 @@ def initialize_entity_extractor():
             g.rule_llm_integration = RuleLLMIntegration(
                 rule_file_path='rules/rule_base.json',
                 model_name='deepseek-r1:7b',
-                max_depth=3
+                max_depth=30
             )
             print("规则推理模块已初始化")
         except Exception as e:
